@@ -558,3 +558,101 @@ SELECT
 FROM
 	dual;
 
+
+-- 9 : 숫자 한자리를 의미
+-- 0 : 숫자 한자리를 의미(빈자리를 0으로 채움)
+SELECT e.SAL, TO_CHAR(e.sal, '$999,999'), TO_CHAR(e.sal, '$000,999,999')
+FROM EMP e; 
+
+
+-- 문자열 데이터와 숫자 데이터 연산
+SELECT 1300-'1500', 1300 + '1500'
+FROM dual;
+
+SELECT '1300'-'1500'
+FROM dual;
+
+-- ORA-01722: 수치가 부적합합니다
+SELECT '1,300'-'1,500'
+FROM dual;
+
+
+-- TO_NUMBER('문자열데이터','인식할숫자형태')
+SELECT TO_NUMBER('1,300','999,999') - TO_NUMBER('1,500','999,999')
+FROM dual;
+
+-- TO_DATE() : 문자열데이터 => 날짜형식으로 변경
+SELECT
+	TO_DATE('2025-03-20', 'YYYY-MM-DD') AS DATE1,
+	TO_DATE('2025-03-20', 'YYYY/MM/DD') AS DATE2
+FROM
+	DUAL;
+
+
+-- NULL
+-- 산술연산이나 비교연산자(IS NULL OR IS NOT NULL)가 제대로 수행되지 않음
+-- 1) NVL(널여부를 검사할 데이터,널일때 반환할데이터)
+-- 2) NVL2(널여부를 검사할 데이터,널이아닐때 반환할 데이터,널일때 반환할데이터)
+
+SELECT e.EMPNO, e.ENAME, e.sal, e.comm, e.sal+e.comm,  NVL(e.comm, 0), e.sal + nvl(e.comm,0)
+FROM EMP e;
+
+
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.sal,
+	e.comm,
+	e.sal + e.comm,
+	NVL2(e.comm, 'O', 'X'),
+	NVL2(e.comm, e.sal * 12 + e.COMM, e.SAL*12) AS 연봉
+FROM
+	EMP e;
+
+-- 자바의 if, switch 구문과 유사
+-- DECODE
+-- DECODE(검사대상이 될 데이터, 
+--        조건1, 조건1 만족시 반환할 결과,
+--        조건2, 조건2 만족시 반환할 결과,
+--        조건1~조건n 일치하지 않을때 반환할 결과
+-- )
+-- CASE
+-- CASE 검사대상이 될 데이터 
+--     WHEN  조건1 THEN 조건1 만족시 반환할 결과
+--     WHEN  조건2 THEN 조건2 만족시 반환할 결과
+--     ELSE  조건1~조건n 일치하지 않을때 반환할 결과
+-- END
+
+-- 직책이 MANAGER 인 사원은 급여의 10% 인상
+-- 직책이 SALESMAN 인 사원은 급여의 5% 인상
+-- 직책이 ANALYST 인 사원은 동결
+-- 나머지는 3% 인상
+
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.JOB,
+	e.SAL,
+	DECODE(e.job, 'MANAGER', e.SAL * 1.1,
+	'SALESMAN', e.SAL * 1.05,
+	'ANALYST', e.SAL,
+	e.SAL * 1.03
+	) AS upsal
+FROM
+	EMP e;
+
+
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.JOB,
+	e.SAL,
+	CASE
+		e.job
+	 WHEN 'MANAGER' THEN e.SAL * 1.1
+		WHEN 'SALESMAN' THEN e.SAL * 1.05
+		WHEN 'ANALYST' THEN e.SAL
+		ELSE e.SAL * 1.03
+	END AS upsal
+FROM
+	EMP e;
