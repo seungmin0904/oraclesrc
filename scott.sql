@@ -498,3 +498,497 @@ FROM
 	dual;
 
 
+-- 9 : 숫자 한자리를 의미
+-- 0 : 숫자 한자리를 의미(빈자리를 0으로 채움)
+SELECT e.SAL, TO_CHAR(e.sal, '$999,999'), TO_CHAR(e.sal, '$000,999,999')
+FROM EMP e; 
+
+
+-- 문자열 데이터와 숫자 데이터 연산
+SELECT 1300-'1500', 1300 + '1500'
+FROM dual;
+
+SELECT '1300'-'1500'
+FROM dual;
+
+-- ORA-01722: 수치가 부적합합니다
+SELECT '1,300'-'1,500'
+FROM dual;
+
+
+-- TO_NUMBER('문자열데이터','인식할숫자형태')
+SELECT TO_NUMBER('1,300','999,999') - TO_NUMBER('1,500','999,999')
+FROM dual;
+
+-- TO_DATE() : 문자열데이터 => 날짜형식으로 변경
+SELECT
+	TO_DATE('2025-03-20', 'YYYY-MM-DD') AS DATE1,
+	TO_DATE('2025-03-20', 'YYYY/MM/DD') AS DATE2
+FROM
+	DUAL;
+
+
+-- NULL
+-- 산술연산이나 비교연산자(IS NULL OR IS NOT NULL)가 제대로 수행되지 않음
+-- 1) NVL(널여부를 검사할 데이터,널일때 반환할데이터)
+-- 2) NVL2(널여부를 검사할 데이터,널이아닐때 반환할 데이터,널일때 반환할데이터)
+
+SELECT e.EMPNO, e.ENAME, e.sal, e.comm, e.sal+e.comm,  NVL(e.comm, 0), e.sal + nvl(e.comm,0)
+FROM EMP e;
+
+
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.sal,
+	e.comm,
+	e.sal + e.comm,
+	NVL2(e.comm, 'O', 'X'),
+	NVL2(e.comm, e.sal * 12 + e.COMM, e.SAL*12) AS 연봉
+FROM
+	EMP e;
+
+-- 자바의 if, switch 구문과 유사
+-- DECODE
+-- DECODE(검사대상이 될 데이터, 
+--        조건1, 조건1 만족시 반환할 결과,
+--        조건2, 조건2 만족시 반환할 결과,
+--        조건1~조건n 일치하지 않을때 반환할 결과
+-- )
+-- CASE
+-- CASE 검사대상이 될 데이터 
+--     WHEN  조건1 THEN 조건1 만족시 반환할 결과
+--     WHEN  조건2 THEN 조건2 만족시 반환할 결과
+--     ELSE  조건1~조건n 일치하지 않을때 반환할 결과
+-- END
+
+-- 직책이 MANAGER 인 사원은 급여의 10% 인상
+-- 직책이 SALESMAN 인 사원은 급여의 5% 인상
+-- 직책이 ANALYST 인 사원은 동결
+-- 나머지는 3% 인상
+
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.JOB,
+	e.SAL,
+	DECODE(e.job, 'MANAGER', e.SAL * 1.1,
+	'SALESMAN', e.SAL * 1.05,
+	'ANALYST', e.SAL,
+	e.SAL * 1.03
+	) AS upsal
+FROM
+	EMP e;
+
+
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.JOB,
+	e.SAL,
+	CASE
+		e.job
+	 WHEN 'MANAGER' THEN e.SAL * 1.1
+		WHEN 'SALESMAN' THEN e.SAL * 1.05
+		WHEN 'ANALYST' THEN e.SAL
+		ELSE e.SAL * 1.03
+	END AS upsal
+FROM
+	EMP e;
+
+-- COMM NULL 인 경우 '해당사항없음'
+-- COMM 0 인 경우 '수당없음'
+-- COMM > 0 인 경우 '수당 : 800'
+
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.JOB,
+	e.SAL,
+	CASE
+		WHEN e.COMM IS NULL THEN '해당사항없음'
+		WHEN e.COMM = 0 THEN '수당없음'
+		WHEN e.COMM > 0 THEN '수당 : ' || e.COMM
+	END AS comm_text
+FROM
+	EMP e;
+
+-- [실습]
+-- 1. empno 7369 => 73**, ename SMITH => S****
+-- empno, 마스킹처리empno, ename, 마스킹처리ename
+
+SELECT replace('7369',SUBSTR('7369',3),'**')
+FROM dual;
+
+
+SELECT
+	e.empno,
+	REPLACE(e.empno, SUBSTR(e.empno, 3), '**') AS masking_empno,
+	e.ENAME,
+	REPLACE(e.ENAME, SUBSTR(e.ENAME, 2), '****') AS masking_ename
+FROM
+	EMP e; 
+
+-- RPAD(열이름,자릿수,채울문자)
+SELECT
+	e.empno,
+	RPAD(SUBSTR(e.empno, 1,2), 4, '*') AS masking_empno,
+	e.ENAME,
+	RPAD(SUBSTR(e.ENAME, 1,1), 5, '*') AS masking_ename
+FROM
+	EMP e;
+
+
+-- 2. emp 테이블에서 사원의 월 평균 근무일수는 21일이다.
+-- 하루 근무시간을 8시간으로 보았을 때 사원의 하루급여(day_pay)와 시급(time_pay)를
+-- 계산하여 출력한다.(단, 하루급여는 소수 셋째자리에서 버리고, 시급은 둘째자리에서 반올림)
+-- 출력형태) EMPNO, ENAME, SAL, DAY_PAY, TIME_PAY
+
+SELECT
+	E.EMPNO,
+	E.ENAME,
+	E.SAL,
+	TRUNC(E.SAL / 21, 2) AS day_pay,
+	ROUND(E.SAL / 21 / 8, 1) AS time_pay
+FROM
+	EMP e;
+
+
+-- 3. 입사일을 기준으로 3개월이 지난 후 첫 월요일에 정직원이 된다.
+-- 사원이 정직원이 되는 날짜(R_JOB)을 YYYY-MM-DD 형식으로 출력한다.
+-- 단, 추가수당이 없는 사원의 추가수당은 N/A 로 출력
+-- 출력형태 ) EMPNO, ENAME, HIREDATE, R_JOB, COMM 
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.HIREDATE,
+	NEXT_DAY(ADD_MONTHS(e.HIREDATE, 3), '월요일') AS r_job,
+	NVL(to_char(e.COMM), 'N/A')
+FROM
+	EMP e; 
+
+
+-- 4. 직속상관의 사원번호가 없을 때 : 0000
+-- 직속상관의 사원번호 앞 두자리가 75 일때 : 5555
+-- 직속상관의 사원번호 앞 두자리가 76 일때 : 6666
+-- 직속상관의 사원번호 앞 두자리가 77 일때 : 7777
+-- 직속상관의 사원번호 앞 두자리가 78 일때 : 8888
+-- 그 외 직속상관 사원 번호일때 : 본래 직속상관 사원번호 그대로 출력
+-- 출력형태) EMPNO, ENAME, MGR, CHG_MGR
+
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.MGR ,
+	CASE 
+		WHEN e.mgr IS NULL THEN '0000'
+		WHEN SUBSTR(TO_CHAR(e.mgr), 1, 2) = '75' THEN '5555'
+		WHEN SUBSTR(TO_CHAR(e.mgr), 1, 2) = '76' THEN '6666'
+		WHEN SUBSTR(TO_CHAR(e.mgr), 1, 2) = '77' THEN '7777'
+		WHEN SUBSTR(TO_CHAR(e.mgr), 1, 2) = '78' THEN '8888'
+		ELSE TO_CHAR(e.mgr)
+	END	AS chg_mgr
+FROM
+	EMP e; 
+
+
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.MGR ,
+	CASE 
+		WHEN e.mgr IS NULL THEN '0000'
+		WHEN e.mgr LIKE '75%' THEN '5555'
+		WHEN e.mgr LIKE '76%' THEN '6666'
+		WHEN e.mgr LIKE '77%' THEN '7777'
+		WHEN e.mgr LIKE '78%' THEN '8888'
+		ELSE TO_CHAR(e.mgr)
+	END	AS chg_mgr
+FROM
+	EMP e; 
+
+
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.MGR ,
+	DECODE(SUBSTR(to_char(nvl(e.mgr,0)),1,2), 
+		'0', '0000',
+		'75', '5555',
+		'76', '6666',
+		'77', '7777',
+		'78', '8888',
+		SUBSTR(to_char(e.mgr),1))		
+	AS chg_mgr
+FROM
+	EMP e; 
+
+
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.MGR ,
+	DECODE(SUBSTR(to_char(e.mgr),1,2), 
+		null, '0000',
+		'75', '5555',
+		'76', '6666',
+		'77', '7777',
+		'78', '8888',
+		SUBSTR(to_char(e.mgr),1))		
+	AS chg_mgr
+FROM
+	EMP e; 
+
+
+
+-- 하나의 열에 출력결과를 담는 다중행 함수
+-- null 행은 제외하고 연산
+-- 1. sum() / 2. count() / 3. max() / 4. min() / 5. avg()
+
+-- 전체사원 급여 합
+SELECT sum(e.sal) FROM EMP e;
+
+-- 중복된 급여는 제외한 합
+SELECT sum(e.sal), sum(DISTINCT e.sal), sum(ALL e.sal) FROM EMP e;
+
+-- 단일 그룹의 그룹 함수가 아닙니다(해결 : group by 절에 사용한 컬럼만 가능)
+-- SELECT e.ENAME,sum(e.sal) FROM EMP e;
+
+-- 사원 수
+SELECT count(e.empno), count(e.COMM), count(ALL e.COMM)
+FROM EMP e;
+
+-- 급여의 최대값과 최소값
+SELECT max(e.sal), min(e.sal)
+FROM EMP e;
+
+-- 10번부서 사원 중 급여 최대값
+SELECT max(e.sal), min(e.sal)
+FROM EMP e
+WHERE e.deptno = 10;
+
+-- 20번 부서의 입사일 중 최근 입사일 출력
+SELECT max(e.HIREDATE), min(e.HIREDATE)
+FROM EMP e
+WHERE e.DEPTNO = 20
+
+-- 부서번호가 30번인 사원의 평균 급여
+SELECT avg(e.sal)
+FROM emp e
+WHERE e.DEPTNO = 30;
+
+-- 결과값을 원하는 열로 묶어 출력 : GROUP BY
+
+-- 부서별 평균 급여 조회
+SELECT e.DEPTNO, AVG(e.SAL)
+FROM EMP e 
+GROUP BY e.DEPTNO;
+
+-- 부서별, 직책별 평균 급여 조회
+SELECT e.DEPTNO,e.job, AVG(e.SAL)
+FROM EMP e 
+GROUP BY e.DEPTNO, e.JOB
+ORDER BY e.DEPTNO;
+
+-- 결과값을 원하는 열로 묶어 출력할 때 조건 추가 : GROUP BY + HAVING
+
+-- 부서별, 직책별 평균 급여 조회 + 평균급여 >= 2000
+SELECT e.DEPTNO,e.job, AVG(e.SAL)
+FROM EMP e 
+GROUP BY e.DEPTNO, e.JOB HAVING AVG(e.SAL) >= 2000
+ORDER BY e.DEPTNO;
+
+
+-- SQL Error [934] [42000]: ORA-00934: 그룹 함수는 허가되지 않습니다
+-- WHERE 절 그룹함수 안됨
+--SELECT e.DEPTNO,e.job, AVG(e.SAL)
+--FROM EMP e 
+--WHERE AVG(e.SAL) >= 2000
+--GROUP BY e.DEPTNO, e.JOB 
+--ORDER BY e.DEPTNO;
+
+-- 같은 직무에 종사는 사원이 3명 이상인 직책과 인원 수 출력
+-- SALESMAN 4
+
+SELECT e.JOB, COUNT(e.EMPNO)
+FROM EMP e 
+GROUP BY e.JOB HAVING COUNT(e.empno) >= 3;
+
+
+-- 사원들의 입사연도를 기준으로 부서별로 몇 명이 입사했는지 출력
+-- 1987 20 2
+-- 1987 30 1
+
+SELECT TO_CHAR(e.HIREDATE, 'YYYY'), e.DEPTNO, COUNT(e.EMPNO)
+FROM EMP e 
+GROUP BY TO_CHAR(e.HIREDATE, 'YYYY'), e.DEPTNO;
+
+-- 조인(join)
+-- 여러 종류의 데이터를 다양한 테이블에 나누어 저장하기 때문에 여러 테이블의 데이터를 조합하여
+-- 출력할 때가 많다. 이때 사용하는 방식이 조인
+-- 종류
+
+-- 내부조인(연결 안되는 데이터는 제외) - inner join
+-- 1. 등가조인 : 각 테이블의 특정 열과 일치하는 데이터를 기준으로 추출
+-- 2. 비등가조인 : 등가조인 외의 방식
+-- 3. 자체(self)조인 : 같은 테이블끼리 조인
+
+-- 외부조인 : 연결 안되는 데이터 보기 - outer join
+-- 1. 왼쪽외부조인(left outer join) : 오른쪽 테이블의 데이터 존재 여부와 상관없이 왼쪽 테이블 기준으로 출력
+-- 2. 오른쪽외부조인(right outer join) : 왼쪽 테이블의 데이터 존재 여부와 상관없이 오른쪽 테이블 기준으로 출력
+
+-- 사원별 부서정보 조회
+SELECT *
+FROM EMP e, DEPT d
+WHERE e.DEPTNO = d.DEPTNO;
+
+SELECT e.EMPNO, e.DEPTNO, d.DNAME, d.LOC
+FROM EMP e, DEPT d
+WHERE e.DEPTNO = d.DEPTNO;
+
+-- 나올수 있는 모든 조합 출력
+SELECT e.EMPNO, e.DEPTNO, d.DNAME, d.LOC
+FROM EMP e, DEPT d;
+
+-- 사원별 부서정보 조회 + 사원별 급여 >= 3000
+
+SELECT e.EMPNO, e.DEPTNO, e.SAL, d.DNAME, d.LOC
+FROM EMP e, DEPT d
+WHERE e.DEPTNO = d.DEPTNO AND e.SAL >= 3000;
+
+-- 사원별 부서정보 조회 + 사원별 급여 <= 2500 + 사원번호 9999 이하
+
+SELECT e.EMPNO, e.DEPTNO, e.SAL, d.DNAME, d.LOC
+FROM EMP e, DEPT d
+WHERE e.DEPTNO = d.DEPTNO AND e.SAL <= 2500 AND e.EMPNO <= 9999;
+
+-- 비등가조인
+-- 사원별 정보 + salgrade grade 
+SELECT *
+FROM EMP e, SALGRADE s 
+WHERE e.SAL >= s.LOSAL AND e.SAL <= s.HISAL;
+
+SELECT *
+FROM EMP e, SALGRADE s 
+WHERE e.SAL BETWEEN s.LOSAL AND s.HISAL;
+
+-- 자체조인
+-- 사원정보 + 직속상관 정보
+SELECT e1.EMPNO, e1.ENAME, e1.MGR,e2.ENAME AS mgr_ename
+FROM EMP e1, EMP e2
+WHERE e1.MGR = e2.EMPNO;
+
+-- left outer join
+SELECT e1.EMPNO, e1.ENAME, e1.MGR,e2.ENAME AS mgr_ename
+FROM EMP e1, EMP e2
+WHERE e1.MGR = e2.EMPNO(+);
+
+-- right outer join
+SELECT e1.EMPNO, e1.ENAME, e1.MGR,e2.ENAME AS mgr_ename
+FROM EMP e1, EMP e2
+WHERE e1.MGR(+) = e2.EMPNO;
+
+-- 표준 문법을 사용한 조인
+-- join ~ on : inner join
+-- join 테이블명 on 조인하는 조건
+
+-- inner 생략 가능
+SELECT
+	*
+FROM
+	EMP e
+JOIN SALGRADE s 
+ON
+	e.SAL BETWEEN s.LOSAL AND s.HISAL;
+
+SELECT
+	*
+FROM
+	EMP e
+INNER JOIN SALGRADE s 
+ON
+	e.SAL BETWEEN s.LOSAL AND s.HISAL;
+
+
+
+
+-- left outer join 테이블명 on 조인조건 
+SELECT
+	e1.EMPNO,
+	e1.ENAME,
+	e1.MGR,
+	e2.ENAME AS mgr_ename
+FROM
+	EMP e1
+LEFT OUTER JOIN EMP e2
+ON
+	e1.MGR = e2.EMPNO;
+
+
+SELECT
+	e1.EMPNO,
+	e1.ENAME,
+	e1.MGR,
+	e2.ENAME AS mgr_ename
+FROM
+	EMP e1
+RIGHT OUTER JOIN EMP e2
+ON
+	e1.MGR = e2.EMPNO;
+
+
+
+SELECT *
+FROM EMP e1 JOIN EMP e2 ON e1.EMPNO  = e2.empno JOIN EMP e3 ON  e2.EMPNO = e3.EMPNO;  
+
+
+-- 급여가 2000을 초과한 사원의 부서정보, 사원정보 출력
+-- 출력) 부서번호,부서명,사원번호,사원명,급여
+
+SELECT e.DEPTNO, d.DNAME, e.EMPNO, e.ENAME, e.SAL
+FROM EMP e JOIN DEPT d ON e.DEPTNO = d.DEPTNO
+WHERE e.SAL > 2000
+ORDER BY e.DEPTNO;
+
+
+-- 모든 부서정보와 사원정보를 부서번호, 사원번호 순서로 정렬하여 출력
+-- 출력) 부서번호,부서명,사원번호,사원명,직무,급여
+
+SELECT e.DEPTNO, d.DNAME, e.EMPNO, e.ENAME, e.JOB, e.SAL
+FROM EMP e JOIN DEPT d ON e.DEPTNO = d.DEPTNO
+ORDER BY e.DEPTNO, e.EMPNO;
+
+-- 모든 부서정보, 사원정보, 급여등급정보, 각 사원의 직속상관 정보를
+-- 부서번호, 사원번호 순서로 정렬하여 출력
+-- 출력) 부서번호,부서명,사원번호,사원명,매니저번호,급여,losal,hisal,grade,매니저empno,매니저이름
+
+SELECT
+	e1.deptno,
+	d.DNAME,
+	e1.EMPNO,
+	e1.ENAME,
+	e1.MGR,
+	e1.SAL,
+	s.LOSAL,
+	s.HISAL,
+	s.GRADE,
+	e2.empno AS mgr_empno,
+	e2.ENAME AS mgr_ename
+FROM
+	EMP e1
+LEFT OUTER JOIN EMP e2 ON
+	e1.MGR = e2.EMPNO
+JOIN DEPT d ON
+	e1.DEPTNO = d.DEPTNO
+JOIN SALGRADE s ON
+	e1.sal BETWEEN s.LOSAL AND s.HISAL
+ORDER BY e1.DEPTNO, e1.empno;
+
+-- 부서별 평균급여,최대급여,최소급여,사원 수 출력
+-- 부서번호, 부서명, avg_sal, min_sal, cnt
+SELECT e.DEPTNO, d.DNAME,  avg(e.sal) AS avg_sal, max(e.sal) AS max_sal,min(e.sal) AS min_sal, count(e.empno) AS cnt
+FROM emp e JOIN DEPT d ON e.DEPTNO = d.DEPTNO
+GROUP BY e.DEPTNO, d.DNAME;
+
+
+

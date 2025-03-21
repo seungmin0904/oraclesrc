@@ -100,6 +100,42 @@ SELECT e.EMPLOYEE_ID , e.FIRST_NAME, e.HIRE_DATE, ADD_MONTHS(e.HIRE_DATE, 120)
 FROM EMPLOYEES e ;
 
 
+-- 회사 내의 최대연봉 과 최소 연봉의 차이 조회
+SELECT MAX(e.SALARY)-MIN(e.SALARY) AS gap
+FROM EMPLOYEES e; 
+
+-- 매니저로 근무하는 사원들 숫자 조회
+SELECT count(distinct e.MANAGER_ID)
+FROM EMPLOYEES e; 
+
+
+-- 부서별 직원 수 조회(부서번호 오름차순)
+-- 부서번호 직원수
+
+SELECT e.DEPARTMENT_ID, COUNT(e.EMPLOYEE_ID) 
+FROM EMPLOYEES e 
+GROUP BY e.DEPARTMENT_ID
+ORDER BY e.DEPARTMENT_ID;
+
+
+-- 부서별 평균연봉 조회(부서번호 오름차순)
+-- 부서번호 평균연봉(2215.45 => 2215)
+
+SELECT e.DEPARTMENT_ID, round(AVG(e.SALARY))
+FROM EMPLOYEES e 
+GROUP BY e.DEPARTMENT_ID
+ORDER BY e.DEPARTMENT_ID;
+
+
+-- 동일한 직무를 가진 사원의 수 조회
+-- job_id 인원수
+
+SELECT e.JOB_ID, COUNT(e.EMPLOYEE_ID)
+FROM EMPLOYEES e 
+GROUP BY e.JOB_ID 
+ORDER BY e.JOB_ID;
+
+
 
 
 
