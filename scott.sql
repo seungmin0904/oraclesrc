@@ -949,4 +949,121 @@ SELECT e.DEPTNO , d.DNAME , avg(e.sal) AS avg_sal, max(e.sal) AS max_sal, min(e.
 FROM EMP e JOIN DEPT d ON e.DEPTNO = d.DEPTNO
 GROUP BY e.DEPTNO,d.DNAME;
 
+-- 서브쿼리 : SQL 구문을 실행하는 데 필요한 데이터를 추가로 조회하고 SQL 구문 내부에서 사용하는 SELECT 문 
+-- 연산자등의 비교 또는 조회대상 오른쪽에 놓이며 괄호로 묶어서 사용 
+-- 특수한 몇몇 경우를 제외한 대부분의 서브쿼리에서는 order by 절을 사용할 수 없다
+-- 서브쿼리의 select 절에 명시한 열은 메인쿼리의 비교대상과 같은 자료형과 같은 개수로 지정 select = where
+-- 서브쿼리에 있는 select 문의 결과행 수는 함께 사용하는 메인쿼리의 연산자 종류와 어울려야 한다
+-- 1) 단일행 서브쿼리 = 실행 결과가 행 하나인 서브쿼리 :  SELECT* FROM EMP e  WHERE e.SAL > (SELECT e.SAL FROM EMP e WHERE e.ENAME ='JONES'); 
+--     연산자: > , >= , = , < , <= , <>  , ^= , !=
+-- 2) 다중행 서브쿼리 = 실행결과가 여러개의 행인 서브쿼리
+--     연산자 : in, any(some), all, exists
+-- 3) 다중열 서브쿼리 : 서브쿼리의 select 절에 비교할 데이터를 여러개 지정
+
+-- 이름이 JONES 사원의 급여보다 높은 급여를 받는 사원을 조회 
+-- 1) JOENS 급여 조회
+SELECT e.SAL 
+FROM EMP e 
+WHERE e.ENAME ='JONES';
+
+SELECT* FROM EMP e  WHERE e.SAL >2975;
+
+
+--서브쿼리로 변경 JONES 보다 많이받는 사원 조회
+SELECT* FROM EMP e  WHERE e.SAL > (SELECT e.SAL FROM EMP e WHERE e.ENAME ='JONES');
+
+--ALLEN 보다 빨리 입사한 사원 조회
+SELECT* FROM EMP e  WHERE e.HIREDATE < (SELECT e.HIREDATE FROM EMP e WHERE e.ENAME ='ALLEN');
+
+-- 20번 부서에 속한 사원 중 전체 사원의 평균 급여보다 높은 급여를 받는 사원 정보(사번,이름,직무,급여,)
+-- 소속부서정보 조회( 부서번호, 부서명 , 부서위치)
+SELECT e.EMPNO ,e.ENAME ,e.JOB ,e.SAL ,d.DEPTNO ,d.DNAME ,d.LOC FROM EMP e  JOIN DEPT d  ON e.DEPTNO =d.DEPTNO WHERE e.deptno = 20  AND e.SAL > (SELECT avg(e.sal) FROM EMP e );
+
+-- 전체 사원의 평균 급여보다 적거나 같은 급여를 받는 20번 부서의 정보조회
+SELECT e.EMPNO ,e.ENAME ,e.JOB ,e.sal ,d.DEPTNO ,d.DNAME ,d.LOC FROM EMP e  JOIN DEPT d  ON e.DEPTNO =d.DEPTNO WHERE e.deptno = 20  AND e.SAL <= (SELECT avg(e.sal) FROM EMP e );
+
+
+--다중행 서브퀄
+-- 부서별 최고급여와 같은 급여를 받는 사원조회
+SELECT max(e.SAL) FROM EMP e  GROUP BY e.DEPTNO;
+
+-- 서브쿼리 
+SELECT * FROM EMP e  WHERE e.SAL IN (SELECT max(e.sal) FROM EMP e  GROUP BY e.DEPTNO); 
+
+
+-- ANY, SOME  : 서브쿼리가 반환한 여러 결과값중 메인쿼리와 조건식을 사용한 결과가 하나라도 true 라면 
+--                          메인쿼리 조건식을 true로 반환
+--IN과 같은 효과를 =ANY , =SOME 으로 가능
+SELECT * FROM EMP e  WHERE e.SAL = ANY  (SELECT max(e.sal) FROM EMP e  GROUP BY e.DEPTNO); 
+
+--<AVY <SOME
+-- 30번 부서의 (최대)급여보다 적은 급여를 받는 사원(다중행)
+SELECT * FROM EMP e  WHERE e.SAL <ANY (SELECT e.sal FROM emp e  WHERE e.DEPTNO =30)
+ORDER BY e.SAL, e.EMPNO;
+
+-- 30번 부서의 (최대)급여보다 적은 급여를 받는 사원(단잉행)
+SELECT * FROM EMP e  WHERE e.SAL < (SELECT max(e.sal) FROM emp e  WHERE e.DEPTNO =30)
+ORDER BY e.SAL, e.EMPNO;
+
+-- ALL : 서브쿼리의 모든 결과가 조건식에 맞아 떨어져야만 메인쿼리의 조건식이 true 
+-- 30번 부서의 최소급여보다 적은 급여를 받는 사원
+--단일행
+SELECT * FROM emp e WHERE e.SAL  <(SELECT min(e.sal) FROM emp e WHERE e.DEPTNO =30);
+--다중행
+SELECT * FROM emp e WHERE e.SAL  < ALL (SELECT e.sal FROM emp e WHERE e.DEPTNO =30);
+
+--EXISTS : 서브쿼리에 결과값이 하나 이상있으면 조건식이 모두 true , 없으면 false 
+SELECT * FROM emp e  WHERE EXISTS  (SELECT DNAME FROM DEPT WHERE DEPTNO =10);
+SELECT * FROM emp e  WHERE EXISTS  (SELECT DNAME FROM DEPT WHERE DEPTNO =50);
+
+
+-- 다중열 서브쿼리
+-- 비교할 열이 여러개인 다중열 서브쿼리
+-- 부서별 최고 급여와 같은 급여를 받는 사원 조회
+SELECT * FROM emp e WHERE (e.DEPTNO, e.sal) IN (SELECT e.deptno,max(e.sal) FROM emp e GROUP BY e.DEPTNO);
+
+--select 절에 사용하는 서브쿼리(결과가 반드시 하나만 반환)
+SELECT e.EMPNO,e.JOB,e.SAL,(
+SELECT s.GRADE FROM SALGRADE s WHERE e.SAL  BETWEEN s.LOSAL  AND s.HISAL )AS salgreade,
+e.DEPTNO,(
+SELECT d.dname FROM dept d WHERE e.DEPTNO  = d.DEPTNO ) AS dname
+FROM EMP e ;
+
+
+-- 10번 부서에 근무하는 사원 중 30번 부서에 없는 직책인 사원의 사원정보(사번,이름,직무)
+-- 부서정보(부서번호,부서명,위치)
+SELECT e.EMPNO,e.ENAME,e.JOB, d.DEPTNO,d.DNAME,d.LOC
+FROM EMP e  JOIN DEPT d ON e.DEPTNO =d.DEPTNO
+WHERE e.JOB
+NOT IN (SELECT  e.JOB
+FROM EMP e 
+WHERE e.DEPTNO =30)AND e.DEPTNO =10;
+
+-- 직책이 salesman인 사람의 최고급여보다 많이 받는 사람의 사원정보, 급여등급 정보를 조회
+-- 다중행 함수 사용하는 방법과 사용하지 않는(단일행) 방법
+-- 출력 : 사번,이름,급여,등급
+
+SELECT e.EMPNO ,e.ENAME ,e.sal,(
+SELECT s.GRADE FROM SALGRADE s WHERE e.SAL  BETWEEN s.LOSAL  AND s.HISAL )AS salgreade
+FROM EMP e 
+WHERE e.SAL>
+(SELECT max(e.sal)
+FROM EMP e 
+WHERE e.job ='SALESMAN') ORDER BY e.EMPNO;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

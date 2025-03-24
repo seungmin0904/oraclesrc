@@ -177,3 +177,52 @@ SELECT e.JOB_ID, COUNT(e.EMPLOYEE_ID)
 FROM EMPLOYEES e 
 GROUP BY e.JOB_ID
 ORDER BY e.JOB_ID;
+
+-- 직업 ID가 SA_MAN인 사원들의 최대 연봉보다 높게 받는 사원들의 
+-- last_name, job_id ,salary 조회
+SELECT e.LAST_NAME,e.JOB_ID,e.SALARY
+FROM EMPLOYEES e 
+WHERE e.SALARY 
+>(SELECT max(e.SALARY)
+FROM EMPLOYEES e 
+WHERE e.JOB_ID = 'SA_MAN');
+
+-- 커미션을 받는 사원들의 부서와 연봉이 동일한 사원들의 last_name 
+-- deptno,salary 조회
+SELECT e.LAST_NAME,e.DEPARTMENT_ID,e.SALARY,e.COMMISSION_PCT
+FROM EMPLOYEES e 
+WHERE (e.DEPARTMENT_ID ,e.SALARY)
+IN  (SELECT e.DEPARTMENT_ID,e.SALARY
+FROM EMPLOYEES e 
+WHERE e.COMMISSION_PCT IS NOT NULL);
+
+-- 회사 전체 평균 연봉보다 더 버는 사원들 중 last_name에 u가 있는 
+-- 사원들이 근무하는 부서와 같은 부서에 근무하는 사원들의 
+-- 사번,last_name ,salary 조회 
+
+-- 각 부서별 평균 연봉보다 더 받는 동일부서 사원들의 last_name, salary 
+-- deptno,해당부서의 평균연봉 조회(부서별 평균연봉을 기준으로 오름차순)
+SELECT e.LAST_NAME,e.SALARY,e.DEPARTMENT_ID,AVG(e.SALARY)
+FROM EMPLOYEES e JOIN DEPARTMENTS d 
+WHERE e.DEPARTMENT_ID = d.DEPARTMENT_ID > (SELECT avg(e.SALARY)
+FROM EMPLOYEES e
+GROUP BY e.DEPARTMENT_ID);
+-- last_name 이 'Davies' 인 사람보다 나중에 고용된 사원들의 last_name, hire_date 조회
+
+-- last_name 이 'King' 인 사원을 매니저로 두고있는 모든 사원들의 last_name, salary 조회 
+
+-- last_name이 'Hall'인 사원과 동일한 연봉 및 커미션을 받는 사원들의 last_name ,부서번호, 연봉조회
+
+-- last_name 이 'Zlotkey'인 사원과 동일한 부서에서 근무하는 모든 사원들의 사번, 고용날짜 조회 
+-- 단, 'Zlotkey' 제외 
+
+-- 부서가 위치한 지역의 국가 ID 및 국가명을 조회한다
+-- Location, departments, countries 테이블 사용 
+SELECT c.COUNTRY_ID ,c.COUNTRY_NAME 
+FROM DEPARTMENTS d ,LOCATIONS l , COUNTRIES c 
+WHERE LOCATION_ID;
+
+-- 위치 ID 가 1700인 사원들의 연봉과 커미션을 추출한 뒤, 추출된 사원들의 연봉과 커미션이 동일한 사원정보 출력 
+-- 출력: 사번, 이름(first_name + last_name), 부서번호 , 급여
+
+
