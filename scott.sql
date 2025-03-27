@@ -1737,10 +1737,10 @@ CREATE TABLE emp_temp AS SELECT * FROM emp WHERE 1<>1;
 
 --날짜 데이터 삽입 : 'YYYY-MM-DD' or 'YYYY/MM/DD'
 INSERT INTO EMP_TEMP(empno,ENAME,job,mgr,HIREDATE,sal,COMM,DEPTNO)
-VALUES(9999,'홍길동' , 'PRESIDENT',NULL,'2020-12-13', 5000 ,1000,10);
+VALUES(9997,'최길동' , 'PRESIDENT',NULL,'2020-12-13', 5000 ,1000,10);
 
 INSERT INTO EMP_TEMP(empno,ENAME,job,mgr,HIREDATE,sal,COMM,DEPTNO)
-VALUES(3111,'성춘향' , 'MANAGER',9999,sysdate, 4000 ,NULL,30);
+VALUES(3113,'이춘향' , 'MANAGER',9999,sysdate, 4000 ,NULL,30);
 
 -- * emp,salgrade 급여등급이 1인 사원들만 emp_temp에 추가하기
 INSERT INTO EMP_TEMP(empno,ENAME,job,mgr,HIREDATE,sal,COMM,DEPTNO)
@@ -1979,6 +1979,11 @@ email VARCHAR(30),
 age NUMBER(4)
 );
 
+-- insert(remark X)
+INSERT INTO member(id,name,addr,email,age)
+VALUES('hong123','성춘향','서울시 종로구','hong123@naver.com',24);
+
+
 -- member 테이블 열 추가 
 -- bigo 열추가(문자열, 20)
 ALTER TABLE MEMBER ADD bigo VARCHAR2(20);
@@ -1998,6 +2003,11 @@ ALTER TABLE  MEMBER RENAME COLUMN bigo TO REMARK;
 --    2) INDEX SCAN
 -- 3. view : 가상 테이블 
 --     물리적으로 저장 된 테이블 아님
+-- 4. 시퀀스 :  규칙에따라 순번을 생성
+
+
+
+
 SELECT * FROM dict;
 
 SELECT table_name
@@ -2032,6 +2042,231 @@ WHERE e.DEPTNO =20;
 
 -- 뷰 삭제
 DROP VIEW VW_EMP20;
+
+-- 시퀀스 : 오라클 데이터 베이스에서 특정 규칙에 따른 연속 숫자를 생성하는 객체
+-- 게시판 번호, 멤버 번호
+
+-- CREATE SEQUENCE 시퀀스명;
+CREATE SEQUENCE board_seq;
+-- 
+--CREATE SEQUENCE SCOTT.BOARD_SEQ 
+--INCREMENT BY 1 : 시퀀스에서 생성할 번호의 증가값 , 값이 없으면 기본값이 1
+--MINVALUE 1  : 시퀀스에서 생성할 번호의 최소값 , 값이 없으면 기본값이 NOMINVALUE (오름차순일때 1)
+--MAXVALUE 9999999999999999999999999999 : 시퀀스에서 생성할 번호의 최대값
+--NOCYCLE : 최소값에서 최대값까지 번호가 다 생성 되었을 경우 새로운 번호를 요청하면 error 발생 CYCLE: 돌아감
+--CACHE 20 NOORDER  : 시퀀스가 생성할 번호 개수를 미리 메모리에 할당 or NOCACHE
+-- NOORDER
+
+-- member 테이블에 NO컬럼(number) 추가
+ALTER TABLE member ADD NO NUMBER(20);
+
+
+-- member no 값은 시퀀스 값으로 입력하기
+-- 사용할 시퀀스 생성
+CREATE SEQUENCE member_seq;
+
+INSERT INTO member(NO, id,name,addr,email,age)
+VALUES(member_seq.nextval,'hong123','성춘향','서울시 종로구','hong123@naver.com',24);
+
+-- 시퀀스명.currval : 가장 마지막으로 생성된 시퀀스 확인
+-- 시퀀스명.nextval : 시퀀스 발행
+SELECT member_seq.currval
+FROM dual;
+
+CREATE SEQUENCE seq_dept_sequence
+INCREMENT BY 10
+START WITH 10
+MAXVALUE 90
+MINVALUE 0
+nocycle cache 2;
+
+CREATE TABLE dept_sequence AS SELECT * FROM dept WHERE 1<>1;
+
+INSERT INTO dept_sequence VALUES (seq_dept_sequence.nextval,'DATABASE', 'SEOUL');
+SELECT *FROM DEPT_SEQUENCE;
+
+-- 마지막 발생 시퀀스 확인
+SELECT seq_dept_sequence.currval
+FROM dual;
+
+-- 시퀀스 수정 
+ALTER SEQUENCE seq_dept_sequence
+INCREMENT BY 3
+MAXVALUE 99
+CYCLE;
+
+-- 시퀀스 삭제
+DROP SEQUENCE board_seq;
+DROP SEQUENCE seq_dept_sequence;
+
+-- 제약조건(*****아주중요함******) : 테이블에 저장할 데이터를 제약하는 특수한 규칙
+-- 1) NOT NULL : 빈값을 허용하지 않음
+-- 2) UNIQUE : 중복불가
+-- 3) PRIMARY KEY(PK) : 유일하게 하나만 존재
+-- 4) FOREIGN KEY(FK) : 다른테이블과 관계맺기
+-- 5) CHECK : 데이터 형태와 범위를 지정
+-- 6) DEFAULT : 기본값 설정
+
+CREATE TABLE tbl_notnull(
+LOGIN_ID VARCHAR2(20) NOT NULL,
+LOGIN_PWD VARCHAR2(20) NOT NULL,
+TEL VARCHAR2(20)
+);
+
+-- null을 허용하지 않음 LOGIN_PWD VARCHAR2(20) NOT NULL
+INSERT INTO TBL_NOTNULL(LOGIN_ID,LOGIN_PWD,TEL)
+VALUES('hong123',NULL,'010-1234-5678');
+
+INSERT INTO TBL_NOTNULL(LOGIN_ID,LOGIN_PWD,TEL)
+VALUES('hong123','','010-1234-5678');
+
+INSERT INTO TBL_NOTNULL(LOGIN_ID,LOGIN_PWD)
+VALUES('hong123','hong123');
+
+
+-- 제약조건 이름짓기
+CREATE TABLE tbl_notnull2(
+LOGIN_ID VARCHAR2(20) CONSTRAINT 넌못지나간다_LOGID_NN NOT NULL,
+LOGIN_PWD VARCHAR2(20) CONSTRAINT 넌못지나간다_LOGPWD_NN NOT NULL,
+TEL VARCHAR2(20)
+);
+
+-- 기존 제약 조건에 제약조건 추가하기 - 기존 데이터도 새로 추가되는 제약조건을 만족해야 실행됨
+ALTER TABLE TBL_PK MODIFY (TEL NOT NULL);
+-- null 값 업데이트 하기
+UPDATE TBL_UNIQUE  SET TEL = '010-1234-4568'
+WHERE LOGIN_ID = 'hong123';
+-- 제약조건 이름 설정
+ALTER TABLE TBL_NOTNULL2 MODIFY (TEL CONSTRAINT 너도못지나간다 NOT NULL);
+-- 제약조건 이름변경
+ALTER TABLE TBL_NOTNULL2 RENAME CONSTRAINT 너도못지나간다 TO 그냥지나가라;
+-- 제약조건 삭제
+ALTER TABLE TBL_NOTNULL2  DROP  CONSTRAINT 그냥지나가라;
+
+
+-- UNIQUE : 데이터의 중복을 허용하지 않음
+--                   null은 중복 대상에서 제외됨
+
+CREATE TABLE TBL_UNIQUE(
+LOGIN_ID VARCHAR2(20)  UNIQUE,
+LOGIN_PWD VARCHAR2(20) NOT NULL,
+TEL VARCHAR2(20)
+);
+
+-- 데이터 무결성
+-- 데이터베이스에 저장되는 데이터의 정확성과 일치성 보장
+-- DML 과정에서 지켜야 하는 규칙
+
+--  중복을 시도하면 무결성 제약조건 위배 오류
+INSERT INTO TBL_UNIQUE(LOGIN_ID,LOGIN_PWD,TEL)
+VALUES('hong123','hong123','010-1234-5678');
+
+INSERT INTO TBL_UNIQUE(LOGIN_ID,LOGIN_PWD,TEL)
+VALUES(NULL ,'hong123','010-1234-5678');
+
+ALTER TABLE TBL_UNIQUE MODIFY (TEL UNIQUE);
+
+UPDATE TBL_UNIQUE tu SET TEL = NULL;
+
+
+-- 유일하게 하나만 있는 값 : PRIMARY KEY(PK)
+-- PK : NOT NULL + UNIQUE
+-- PK 생성 > 컬럼 하나만 지정가능함 
+CREATE TABLE TBL_PK(
+LOGIN_ID VARCHAR2(20)  PRIMARY KEY,
+LOGIN_PWD VARCHAR2(20) NOT NULL,
+TEL VARCHAR2(20)
+);
+
+CREATE TABLE TBL_PK2(
+LOGIN_ID VARCHAR2(20) CONSTRAINT PK키지정 PRIMARY KEY,
+LOGIN_PWD VARCHAR2(20) NOT NULL,
+TEL VARCHAR2(20)
+);
+
+
+INSERT INTO TBL_PK(LOGIN_ID,LOGIN_PWD,TEL)
+VALUES('hong123','hong123','010-1234-5678');
+
+INSERT INTO TBL_PK2(LOGIN_ID,LOGIN_PWD,TEL)
+VALUES('hong123','hong123','010-1234-5678');
+
+--FK(외래키) : 다른테이블과 관계를 맺는 키
+-- join 구문 EMP(deptno) , DEPT(deptno) 연동 
+-- emp 테이블에 deptno 는 dept테이블에 있는 dept 값을 참조해서 삽입
+
+-- 부서 테이블 생성(참조 대상이 되는 테이블 먼저 작성)
+--부모
+CREATE TABLE DEPT_FK(
+ DEPTNO NUMBER(2) CONSTRAINT DEPTFK_DEPTNO_PK PRIMARY KEY,
+ DNAME VARCHAR2(14),
+ LOC VARCHAR2(13)
+);
+
+--자식
+CREATE TABLE EMP_FK(
+EMPNO NUMBER(4) CONSTRAINT EMPFK_EMPNO_PK PRIMARY KEY,
+ENAME VARCHAR2(10) NOT NULL,
+JOB VARCHAR2(9) NOT NULL,
+MGR NUMBER(4),
+HIREDATE DATE,
+SAL NUMBER(7,2) NOT NULL,
+COMM NUMBER(7,2),
+DEPTNO NUMBER(2) CONSTRAINT EMPFK_DEPTNO_FK REFERENCES DEPT_FK(DEPTNO)
+);
+
+--무결성 제약조건(SCOTT.EMPFK_DEPTNO_FK)이 위배되었습니다-부모 키가 없습니다
+-- 참조 대상이 되는(부모) 테이블의 데이터부터 삽입 후 참조하는(자식) 테이블의 데이터를 삽입해야함 
+
+--부모 데이터 삽입
+INSERT INTO DEPT_FK VALUES(10,'DATABASE','SEOUL');
+--자식 데이터 삽입
+INSERT INTO EMP_FK(EMPNO,ENAME,JOB,HIREDATE,SAl,DEPTNO)
+VALUES(9999,'TEST1','PARTNER',SYSDATE,2500,10);
+
+DELETE FROM EMP_FK WHERE EMPNO =9999;
+DELETE FROM DEPT_FK WHERE DEPTNO = 10;
+
+-- DELETE 시 주의점 : 부모와 관계된 자식이 데이터를 가지고 있으면 부모는 delete 를 수행할 수 없음
+--1) 자식데이터 삭제,변경,null 선행 후
+--2) 부모데이터 삭제 
+DELETE FROM EMP_FK WHERE DEPTNO = 10;
+DELETE FROM DEPT_FK WHERE DEPTNO = 20;
+
+-- 옵션 설정
+-- 1) on delete cascade : 부모 삭제 될때 자식도 같이 삭제(다같이 죽자)
+-- 2) on delete set null : 부모 삭제 시 연결된 자식의 부모를 null로 변경(상속재산 없음)
+
+-- cascade
+CREATE TABLE EMP_FK2(
+EMPNO NUMBER(4) CONSTRAINT EMPFK_EMPNO_PK2 PRIMARY KEY,
+ENAME VARCHAR2(10) NOT NULL,
+JOB VARCHAR2(9) NOT NULL,
+MGR NUMBER(4),
+HIREDATE DATE,
+SAL NUMBER(7,2) NOT NULL,
+COMM NUMBER(7,2),
+DEPTNO NUMBER(2) CONSTRAINT EMPFK_DEPTNO_FK2
+REFERENCES DEPT_FK(DEPTNO) ON DELETE CASCADE 
+);
+
+-- set null
+CREATE TABLE EMP_FK3(
+EMPNO NUMBER(4) CONSTRAINT EMPFK_EMPNO_PK3 PRIMARY KEY,
+ENAME VARCHAR2(10) NOT NULL,
+JOB VARCHAR2(9) NOT NULL,
+MGR NUMBER(4),
+HIREDATE DATE,
+SAL NUMBER(7,2) NOT NULL,
+COMM NUMBER(7,2),
+DEPTNO NUMBER(2) CONSTRAINT EMPFK_DEPTNO_FK3
+REFERENCES DEPT_FK(DEPTNO) ON DELETE SET NULL  
+);
+
+INSERT INTO DEPT_FK VALUES(20,'NETWORK','BUSAN');
+--자식 데이터 삽입
+INSERT INTO EMP_FK3(EMPNO,ENAME,JOB,HIREDATE,SAl,DEPTNO)
+VALUES(9999,'TEST1','PARTNER',SYSDATE,2500,20);
 
 
 
