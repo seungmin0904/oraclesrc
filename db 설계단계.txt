@@ -1,0 +1,7 @@
+vscode 확장 프로그램 - draw.io integreation , prettier , live server , eslint , spring boot extension pack , thymeleaf
+
+환경설정 live server 검색
+custom browser 크롬 설정
+use local ip 체크
+
+drawio 파일 그 외 도형 ER 체크
